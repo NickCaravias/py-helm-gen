@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-{{ .ServiceName }}
+  labels:
+    app: {{ .Release.Name }}-{{ .ServiceName }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-{{ .ServiceName }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-{{ .ServiceName }}
+    spec:
+      containers:
+        - name: {{ .ServiceName }}
+          image: "{{ .Values.{{ .ServiceName }}.image.repository }}:{{ .Values.{{ .ServiceName }}.image.tag }}"
+          ports:
+            - containerPort: 80
+          env:
+            {{- range .Values.{{ .ServiceName }}.env }}
+            - name: {{ .Name }}
+              value: {{ .Value }}
+            {{- end }}

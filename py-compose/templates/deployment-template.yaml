@@ -16,11 +16,14 @@ spec:
     spec:
       containers:
         - name: {{ .ServiceName }}
-          image: "{{ .Values.{{ .ServiceName }}.image.repository }}:{{ .Values.{{ .ServiceName }}.image.tag }}"
+          image: "{{ .Values | get (print .ServiceName ".image.repository") }}:{{ .Values | get (print .ServiceName ".image.tag") }}"
           ports:
-            - containerPort: 80
-          env:
-            {{- range .Values.{{ .ServiceName }}.env }}
-            - name: {{ .Name }}
-              value: {{ .Value }}
+            {{- range .Values[.ServiceName].ports }}
+            - containerPort: {{ . }}
             {{- end }}
+          env:
+            {{- range $key, $value := .Values[.ServiceName].env }}
+            - name: {{ $key }}
+              value: {{ $value }}
+            {{- end }}
+

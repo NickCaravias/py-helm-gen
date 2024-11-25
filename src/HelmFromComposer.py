@@ -1,4 +1,3 @@
-
 import logging
 import os
 import shutil
@@ -224,4 +223,4 @@ appVersion: {self.app_version}
 if __name__ == "__main__":
     compose_file = "example-docker-compose/fake-app/docker-compose.yaml"  
     app_name = "boaty" 
-    helm_generator = HelmFromComposer(compose_file, app_name, description='Helm chart for boaty!', replicas="3", version="3.1.4")
+    helm_generator = HelmFromComposer(compose_file, app_name, description='Helm chart for boaty!', replicas="3", version="3.1.4", app_version="2.0")

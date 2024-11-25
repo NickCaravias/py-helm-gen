@@ -1,12 +1,12 @@
 [tool.poetry]
-name = "py-helm-to-composer"
+name = "py-helm-gen"
 version = "1.0"
 description = "A Python package to generate Helm charts from Docker Compose files."
 authors = ["Nick Caravias <nick.caravias@gmail.com>"]
 license = "MIT"
-repository = "https://github.com/NickCaravias/py-compose"
+repository = "https://github.com/NickCaravias/py-helm-gen"
 readme = "README.md"
-homepage = "https://github.com/NickCaravias/py-compose"
+homepage = "https://github.com/NickCaravias/py-helm-gen"
 keywords = ["helm", "docker-compose", "kubernetes"]
 classifiers = [
     "Topic :: Software Development :: Build Tools",

@@ -41,7 +41,7 @@ jobs:
 
     - name: Test installation from Test PyPI
       run: |
-        pip install --index-url https://test.pypi.org/simple/ py-helm-to-composer
+        pip install --index-url https://test.pypi.org/simple/ py-helm-gen
       continue-on-error: true  # Continue even if the test fails
 
     - name: Confirm Test PyPI installation works

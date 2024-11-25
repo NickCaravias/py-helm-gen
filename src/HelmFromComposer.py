@@ -1,6 +1,5 @@
 import logging
 import os
-import shutil
 import yaml
 
 '''
@@ -28,8 +27,6 @@ class HelmFromComposer:
         if not os.path.exists(self.chart_dir):
             os.makedirs(self.chart_dir)
 
-        self.create_helm_chart()
-
     def create_helm_chart(self):
         '''
         Create the Helm chart structure:
@@ -42,7 +39,7 @@ class HelmFromComposer:
 
         This function is used to read the docker-compose file, and first calls the helper methods 
         create_values_yaml and create_values_yaml to create the file structure and templates, 
-        then calls add_values_for_service, generate_deployment, and generate_service to
+        then calls _add_values_for_service, _generate_deployment, and generate_service to
         populate the helm chart files. RHCH.
         '''
 
@@ -65,10 +62,11 @@ class HelmFromComposer:
 
         # Iterate through services and generate templates
         for service_name, service_data in compose_data['services'].items():
-            if 'db' not in service_name.lower():  # Skip DB services
+            # Skip DB services, these are primarily cloud services that are not defined in a helm chart
+            if 'db' not in service_name.lower():  
                 self.generate_service(service_name, service_data)
-                self.generate_deployment(service_name, service_data)
-                self.add_values_for_service(service_name, service_data)
+                self._generate_deployment(service_name, service_data)
+                self._add_values_for_service(service_name, service_data)
                 self.create_values_yaml()
 
         info = f'=== Helm chart created from {self.compose_file}'
@@ -120,7 +118,7 @@ appVersion: {self.app_version}
         @param: service_data : dict : contents of the yaml template for a helm service file
         '''
 
-        service_template = self.read_template('service-template.yaml')
+        service_template = self._read_template('service-template.yaml')
         service_content = service_template.replace("{{ .ServiceName }}", service_name)
         
         try:
@@ -131,7 +129,7 @@ appVersion: {self.app_version}
             print("ERROR: OS error saving service yaml file")
             raise Exception("ERROR: OS error saving service yaml file")
 
-    def generate_deployment(self, service_name, service_data):
+    def _generate_deployment(self, service_name, service_data):
         '''
         Generate Kubernetes Deployment yaml with the contents of the docker-compose.yaml, including
         data such as env variables, image repository, image tag, ports. Eventually writes updates to 
@@ -140,7 +138,7 @@ appVersion: {self.app_version}
         @param: service_name : str : name of the application that the deployment yaml is defining
         @param: service_data : dict : contents of the yaml template for a helm deployment file
         '''
-        deployment_template = self.read_template('deployment-template.yaml')
+        deployment_template = self._read_template('deployment-template.yaml')
         deployment_content = deployment_template.replace("{{ .ServiceName }}", service_name)
 
         # Replace placeholders for image, ports, and environment variables
@@ -174,7 +172,7 @@ appVersion: {self.app_version}
             print("ERROR: OS error writing deployment yaml file")
             raise Exception("ERROR: OS error writing deployment yaml file")
 
-    def add_values_for_service(self, service_name, service_data):
+    def _add_values_for_service(self, service_name, service_data):
         '''
         Add values from docker-composer.yaml to values.yaml, data includes image, environment variables, and ports
         
@@ -202,7 +200,7 @@ appVersion: {self.app_version}
         # Update the values_data dictionary for this service
         self.values_data[service_name] = service_values
 
-    def read_template(self, template_name):
+    def _read_template(self, template_name):
         '''
         Helper function used to read the helm chart yaml templates in the template directory.
 
@@ -218,9 +216,3 @@ appVersion: {self.app_version}
         except Exception as e:
             print("ERROR: error occured while reading the yaml templates")
             raise Exception("ERROR: error occured while reading the yaml templates")
-
-
-if __name__ == "__main__":
-    compose_file = "example-docker-compose/fake-app/docker-compose.yaml"  
-    app_name = "boaty" 
-    helm_generator = HelmFromComposer(compose_file, app_name, description='Helm chart for boaty!', replicas="3", version="3.1.4", app_version="2.0")

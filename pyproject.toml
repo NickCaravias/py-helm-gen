@@ -1,0 +1,36 @@
+[tool.poetry]
+name = "py-helm-to-composer" 
+version = "1.0"
+description = "A Python package to generate Helm charts from Docker Compose files."
+authors = ["Nick Caravias <nick.caravias@gmail.com>"]
+license = "MIT"
+repository = "https://github.com/NickCaravias/py-compose"
+readme = "README.md"
+homepage = "https://github.com/NickCaravias/py-compose"
+keywords = ["helm", "docker-compose", "kubernetes"]
+classifiers = [
+    "Topic :: Software Development :: Build Tools",
+    "Topic :: Software Development :: Libraries :: Python Modules"
+]
+packages = [
+    {include = "HelmFromComposer" from "src"}
+]
+
+# Python version requirements
+[tool.poetry.dependencies]
+python = "^3.7"
+
+# Runtime dependencies 
+pyyaml = "^6.0.0"
+# Add any other dependencies like 'requests', 'jinja2', etc.
+
+[tool.poetry.dev-dependencies]
+# Dev dependencies
+pytest = "^6.2"
+black = "^21.6b0"
+flake8 = "^3.9"
+
+# build system using setuptools
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"

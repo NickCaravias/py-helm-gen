@@ -46,8 +46,6 @@ class HelmFromComposer:
         with open(self.compose_file, 'r') as f:
             compose_data = yaml.safe_load(f)
 
-        print("DEBUG: Compose Data", compose_data)  # Debug print to check the data
-
         # Iterate through services and generate templates
         for service_name, service_data in compose_data['services'].items():
             print(f"DEBUG: Processing service {service_name}")  # Debug print
@@ -57,15 +55,14 @@ class HelmFromComposer:
                 self.add_values_for_service(service_name, service_data)
                 self.create_values_yaml()
 
-        # Debugging: Check if values_data is being populated
-        print("DEBUG: values_data before writing to values.yaml", self.values_data)
-
     def create_chart_yaml(self):
-        """Create chart.yaml."""
+        """
+        Create chart.yaml
+        """
         chart_yaml_content = f"""
 apiVersion: v2
 name: {self.chart_name}
-description: A Helm chart for Kubernetes deployment
+description: {self.desciption}
 version: 0.1.0
 """
         with open(os.path.join(self.chart_dir, 'Chart.yaml'), 'w') as f:

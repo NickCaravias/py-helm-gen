@@ -11,11 +11,15 @@ class HelmFromComposer:
     def __init__(self, compose_file: str, 
                  app_name: str, 
                  description: str = "A Helm chart for deploying the {{ .Release.Name }} web app", 
-                 replicas: str = "1"):
+                 replicas: str = "1",
+                 version: str = "0.1.0",
+                 app_version: str = "1.0"):
         self.compose_file = compose_file
         self.app_name = app_name
         self.desciption = description
         self.replicas = replicas
+        self.version = version
+        self.app_version = app_version
         self.chart_name = f"{self.app_name}-chart"
         self.chart_dir = f"./{self.chart_name}"
         self.templates_dir = os.path.join(self.chart_dir, "templates")
@@ -50,9 +54,15 @@ class HelmFromComposer:
         if not os.path.exists(self.templates_dir):
             os.makedirs(self.templates_dir)
 
-        # Read docker-compose.yaml and convert services
-        with open(self.compose_file, 'r') as f:
-            compose_data = yaml.safe_load(f)
+        # Read docker-compose.yaml
+        try:
+            with open(self.compose_file, 'r') as f:
+                compose_data = yaml.safe_load(f)
+        except Exception as e:
+            print(e.errno)
+            print("ERROR: Error opening docker-composer.yaml Please check your docker-composer path and contents.")
+            raise Exception("ERROR: Error opening docker-composer.yaml Please check your docker-composer path and contents.")
+        
 
         # Iterate through services and generate templates
         for service_name, service_data in compose_data['services'].items():
@@ -71,12 +81,12 @@ class HelmFromComposer:
         Function to add a template for the Chart.yaml file. There is no data needed from
         the docker-compose.yaml so all 
         '''
-        chart_yaml_content = f"""
-            apiVersion: v2
-            name: {self.chart_name}
-            description: {self.desciption}
-            version: 0.1.0
-            """
+        chart_yaml_content = f"""apiVersion: v2
+name: {self.chart_name}
+description: {self.desciption}
+version: {self.version}
+appVersion: {self.app_version}
+"""
         
         with open(os.path.join(self.chart_dir, 'Chart.yaml'), 'w') as f:
             f.write(chart_yaml_content)
@@ -94,8 +104,13 @@ class HelmFromComposer:
             f.write("  create: false\n")
             f.write("  name: \"\"\n")
             
-            # Dump the values_data for the services into the values.yaml file
-            yaml.dump(self.values_data, f, default_flow_style=False, allow_unicode=True)
+            try:
+                # Dump the values_data for the services into the values.yaml file
+                yaml.dump(self.values_data, f, default_flow_style=False, allow_unicode=True)
+            except Exception as e:
+                print(e.errno)
+                print("ERROR: OS error writing values yaml file.")
+                raise Exception("ERROR: OS error writing values yaml file.")
 
 
     def generate_service(self, service_name, service_data):
@@ -109,8 +124,13 @@ class HelmFromComposer:
         service_template = self.read_template('service-template.yaml')
         service_content = service_template.replace("{{ .ServiceName }}", service_name)
         
-        with open(os.path.join(self.templates_dir, f"service-{service_name}.yaml"), 'w') as f:
-            f.write(service_content)
+        try:
+            with open(os.path.join(self.templates_dir, f"service-{service_name}.yaml"), 'w') as f:
+                f.write(service_content)
+        except Exception as e:
+            print(e.errno)
+            print("ERROR: OS error saving service yaml file")
+            raise Exception("ERROR: OS error saving service yaml file")
 
     def generate_deployment(self, service_name, service_data):
         '''
@@ -147,8 +167,13 @@ class HelmFromComposer:
         else:
             deployment_content = deployment_content.replace("{{ .Values[.ServiceName].ports }}", "")
 
-        with open(os.path.join(self.templates_dir, f"deployment-{service_name}.yaml"), 'w') as f:
-            f.write(deployment_content)
+        try:
+            with open(os.path.join(self.templates_dir, f"deployment-{service_name}.yaml"), 'w') as f:
+                f.write(deployment_content)
+        except Exception as e:
+            print(e.errno)
+            print("ERROR: OS error writing deployment yaml file")
+            raise Exception("ERROR: OS error writing deployment yaml file")
 
     def add_values_for_service(self, service_name, service_data):
         '''
@@ -187,11 +212,16 @@ class HelmFromComposer:
         '''
         
         template_path = os.path.join(os.path.dirname(__file__), 'templates', template_name)
-        with open(template_path, 'r') as template_file:
-            return template_file.read()
+
+        try:
+            with open(template_path, 'r') as template_file:
+                return template_file.read()
+        except Exception as e:
+            print("ERROR: error occured while reading the yaml templates")
+            raise Exception("ERROR: error occured while reading the yaml templates")
 
 
 if __name__ == "__main__":
     compose_file = "example-docker-compose/fake-app/docker-compose.yaml"  
     app_name = "boaty" 
-    helm_generator = HelmFromComposer(compose_file, app_name, description='Helm chart for boaty!', replicas="3")
+    helm_generator = HelmFromComposer(compose_file, app_name, description='Helm chart for boaty!', replicas="3", version="3.1.4")

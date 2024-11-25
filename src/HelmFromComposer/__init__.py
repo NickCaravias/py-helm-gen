@@ -4,7 +4,7 @@ __author__ = 'Nick Caravias'
 __email__ = 'nick.caravias@gmail.com'
 
 # imports
-from HelmFromComposer import HelmFromComposer
+from .HelmFromComposer import HelmFromComposer
 
 # public interface
 __all__ = ['HelmFromComposer']

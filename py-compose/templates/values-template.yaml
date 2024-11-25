@@ -1,6 +1,0 @@
-webapp:
-  image:
-    repository: webapp
-    tag: latest
-  env: {}
-  ports: []

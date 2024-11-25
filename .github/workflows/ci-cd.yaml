@@ -1,0 +1,61 @@
+name: Build and Deploy Python Package
+
+# on:
+#   push:
+#     branches:
+#       - main  
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.8'  
+
+    - name: Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+        echo "$HOME/.local/bin" >> $GITHUB_PATH  # Add poetry to PATH
+
+    - name: Install dependencies
+      run: |
+        poetry install  # Install dependencies from pyproject.toml
+
+    - name: Build package
+      run: |
+        poetry build  # Build the source distribution and wheel
+
+    - name: Upload to Test PyPI
+      run: |
+        twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+      env:
+        TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+
+    - name: Test installation from Test PyPI
+      run: |
+        pip install --index-url https://test.pypi.org/simple/ py-helm-to-composer
+      continue-on-error: true  # Continue even if the test fails
+
+    - name: Confirm Test PyPI installation works
+      run: |
+        python -c "import HelmFromComposer; print(HelmFromComposer.__version__)"  # Check if the package is working after installation
+
+    - name: Confirm PyPI upload
+      run: |
+        read -p "Press enter to confirm Test PyPI installation works, then proceed to upload to PyPI."
+
+    - name: Upload to PyPI
+      run: |
+        twine upload dist/*
+      env:
+        TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+      if: success()  # Only upload to PyPI if the Test PyPI installation was successful

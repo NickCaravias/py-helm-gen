@@ -7,8 +7,8 @@ setup(
     author="Nick Caravias",
     author_email="nick.caravias@gmail.com",
     license="MIT",
-    packages=find_packages(where="src"),
-    package_dir={"": "src"},
+    packages=find_packages(where="src"),  # Look inside `src/` for the packages
+    package_dir={"": "src"},  # The package directory is `src`
     install_requires=[
         "pyyaml>=5.4.0", 
     ],
@@ -27,3 +27,5 @@ setup(
     ],
     python_requires=">=3.7",
 )
+
+

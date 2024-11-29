@@ -2,6 +2,8 @@ import logging
 import os
 import yaml
 
+from yaml_templates import get_deployment_yaml, get_service_yaml, get_values_yaml
+
 '''
 
 '''
@@ -59,7 +61,6 @@ class HelmFromComposer:
             print("ERROR: Error opening docker-composer.yaml Please check your docker-composer path and contents.")
             raise Exception("ERROR: Error opening docker-composer.yaml Please check your docker-composer path and contents.")
         
-
         # Iterate through services and generate templates
         for service_name, service_data in compose_data['services'].items():
             # Skip DB services, these are primarily cloud services that are not defined in a helm chart
@@ -118,7 +119,7 @@ appVersion: {self.app_version}
         @param: service_data : dict : contents of the yaml template for a helm service file
         '''
 
-        service_template = self._read_template('service-template.yaml')
+        service_template = get_service_yaml()
         service_content = service_template.replace("{{ .ServiceName }}", service_name)
         
         try:
@@ -138,7 +139,8 @@ appVersion: {self.app_version}
         @param: service_name : str : name of the application that the deployment yaml is defining
         @param: service_data : dict : contents of the yaml template for a helm deployment file
         '''
-        deployment_template = self._read_template('deployment-template.yaml')
+        
+        deployment_template = get_deployment_yaml()
         deployment_content = deployment_template.replace("{{ .ServiceName }}", service_name)
 
         # Replace placeholders for image, ports, and environment variables

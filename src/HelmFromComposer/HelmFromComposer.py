@@ -10,7 +10,8 @@ class HelmFromComposer:
                  description: str = "A Helm chart for deploying the {{ .Release.Name }} web app", 
                  replicas: str = "1",
                  version: str = "0.1.0",
-                 app_version: str = "1.0"):
+                 app_version: str = "1.0",
+                 auto_sync: bool = False):
         self.compose_file = compose_file
         self.app_name = app_name
         self.desciption = description
@@ -23,7 +24,7 @@ class HelmFromComposer:
         self.values_data = {} # contains data for the resulting values file
 
         # check if the helm chart already exists and if it does not make a directory for it
-        if not os.path.exists(self.chart_dir):
+        if not os.path.exists(self.chart_dir) or auto_sync:
             os.makedirs(self.chart_dir)
 
     def create_helm_chart(self):

@@ -4,9 +4,6 @@ import yaml
 
 from yaml_templates import get_deployment_yaml, get_service_yaml, get_values_yaml
 
-'''
-
-'''
 class HelmFromComposer:
     def __init__(self, compose_file: str, 
                  app_name: str, 
@@ -197,7 +194,7 @@ appVersion: {self.app_version}
 
         # Add container ports
         if 'ports' in service_data:
-            service_values['ports'] = [port.split(':')[0] for port in service_data['ports']]  
+            service_values['ports'] = [port.split(':')[0] for port in service_data['ports']]
 
         # Update the values_data dictionary for this service
         self.values_data[service_name] = service_values

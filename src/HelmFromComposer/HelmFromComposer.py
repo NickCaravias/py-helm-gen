@@ -2,16 +2,16 @@ import logging
 import os
 import yaml
 
-'''
+from yaml_templates import get_deployment_yaml, get_service_yaml, get_values_yaml
 
-'''
 class HelmFromComposer:
     def __init__(self, compose_file: str, 
                  app_name: str, 
                  description: str = "A Helm chart for deploying the {{ .Release.Name }} web app", 
                  replicas: str = "1",
                  version: str = "0.1.0",
-                 app_version: str = "1.0"):
+                 app_version: str = "1.0",
+                 auto_sync: bool = False):
         self.compose_file = compose_file
         self.app_name = app_name
         self.desciption = description
@@ -24,7 +24,7 @@ class HelmFromComposer:
         self.values_data = {} # contains data for the resulting values file
 
         # check if the helm chart already exists and if it does not make a directory for it
-        if not os.path.exists(self.chart_dir):
+        if not os.path.exists(self.chart_dir) or auto_sync:
             os.makedirs(self.chart_dir)
 
     def create_helm_chart(self):
@@ -59,7 +59,6 @@ class HelmFromComposer:
             print("ERROR: Error opening docker-composer.yaml Please check your docker-composer path and contents.")
             raise Exception("ERROR: Error opening docker-composer.yaml Please check your docker-composer path and contents.")
         
-
         # Iterate through services and generate templates
         for service_name, service_data in compose_data['services'].items():
             # Skip DB services, these are primarily cloud services that are not defined in a helm chart
@@ -118,7 +117,7 @@ appVersion: {self.app_version}
         @param: service_data : dict : contents of the yaml template for a helm service file
         '''
 
-        service_template = self._read_template('service-template.yaml')
+        service_template = get_service_yaml()
         service_content = service_template.replace("{{ .ServiceName }}", service_name)
         
         try:
@@ -138,7 +137,8 @@ appVersion: {self.app_version}
         @param: service_name : str : name of the application that the deployment yaml is defining
         @param: service_data : dict : contents of the yaml template for a helm deployment file
         '''
-        deployment_template = self._read_template('deployment-template.yaml')
+        
+        deployment_template = get_deployment_yaml()
         deployment_content = deployment_template.replace("{{ .ServiceName }}", service_name)
 
         # Replace placeholders for image, ports, and environment variables
@@ -195,7 +195,7 @@ appVersion: {self.app_version}
 
         # Add container ports
         if 'ports' in service_data:
-            service_values['ports'] = [port.split(':')[0] for port in service_data['ports']]  
+            service_values['ports'] = [port.split(':')[0] for port in service_data['ports']]
 
         # Update the values_data dictionary for this service
         self.values_data[service_name] = service_values

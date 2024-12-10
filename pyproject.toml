@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pyhelmgen"
-version = "1.1"
+version = "1.2"
 description = "A Python package to generate Helm charts from Docker Compose files."
 authors = ["Nick Caravias <nick.caravias@gmail.com>"]
 license = "MIT"
@@ -20,7 +20,7 @@ packages = [
 
 # Python version requirements
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.71"
 
 # Runtime dependencies
 pyyaml = "^6.0.0"

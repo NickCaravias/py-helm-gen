@@ -1,9 +1,15 @@
 from setuptools import setup, find_packages
 
+# read the contents of README file for description
+from pathlib import Path
+this_directory = Path(__file__).parent
+long_description = (this_directory / "README.md").read_text()
+
 setup(
     name="pyhelmgen",
-    version="1.0",
-    description="A Python package to generate Helm charts from Docker Compose files",
+    version="1.2",
+    long_description=long_description,
+    long_description_content_type='text/markdown',
     author="Nick Caravias",
     author_email="nick.caravias@gmail.com",
     license="MIT",

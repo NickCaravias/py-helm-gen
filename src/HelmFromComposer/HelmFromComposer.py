@@ -1,5 +1,6 @@
 import logging
 import os
+import pkg_resources
 import yaml
 
 from yaml_templates import get_deployment_yaml, get_service_yaml, get_values_yaml
@@ -45,6 +46,11 @@ class HelmFromComposer:
 
         # Create chart.yaml 
         self.create_chart_yaml()
+
+        self.compose_file = pkg_resources.resource_filename('pyhelmgen', self.compose_file)
+
+        # print("====== ", os.path.dirname(__file__), self.compose_file)
+        print(self.compose_file)
 
         # Create sub directory for helm templates if it does not exist yet
         if not os.path.exists(self.templates_dir):
@@ -216,3 +222,10 @@ appVersion: {self.app_version}
         except Exception as e:
             print("ERROR: error occured while reading the yaml templates")
             raise Exception("ERROR: error occured while reading the yaml templates")
+
+if __name__ == "__main__":
+    compose_file = "example-docker-compose/fake-app/docker-compose.yaml"  
+    app_name = "boaty" 
+    helm_generator = HelmFromComposer(compose_file, app_name, description='Helm chart for boaty!', replicas="3", version="3.1.4", app_version="2.0")
+
+    helm_generator.create_helm_chart()

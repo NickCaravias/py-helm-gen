@@ -47,8 +47,6 @@ class HelmFromComposer:
         # Create chart.yaml 
         self.create_chart_yaml()
 
-        # self.compose_file = pkg_resources.resource_filename('pyhelmgen', self.compose_file)
-
         # Use the provided compose_file path directly
         self.compose_file = os.path.abspath(self.compose_file)
 
@@ -62,17 +60,16 @@ class HelmFromComposer:
                 compose_data = yaml.safe_load(f)
         except Exception as e:
             print(e.errno)
-            print("ERROR: Error opening docker-composer.yaml Please check your docker-composer path and contents.")
-            raise Exception("ERROR: Error opening docker-composer.yaml Please check your docker-composer path and contents.")
+            print("ERROR: Error opening docker-compose.yaml. Please check your docker-compose path and contents.")
+            raise Exception("ERROR: Error opening docker-compose.yaml. Please check your docker-compose path and contents.")
         
         # Iterate through services and generate templates
         for service_name, service_data in compose_data['services'].items():
             # Skip DB services, these are primarily cloud services that are not defined in a helm chart
-            if 'db' not in service_name.lower():  
-                self.generate_service(service_name, service_data)
-                self._generate_deployment(service_name, service_data)
+            if 'db' not in service_name.lower():
                 self._add_values_for_service(service_name, service_data)
-                self.create_values_yaml()
+                self._generate_deployment(service_name, service_data)
+                self.generate_service(service_name, service_data)
 
         info = f'=== Helm chart created from {self.compose_file}'
         logging.info(info)
@@ -230,10 +227,3 @@ appVersion: {self.app_version}
         except Exception as e:
             print("ERROR: error occured while reading the yaml templates")
             raise Exception("ERROR: error occured while reading the yaml templates")
-
-if __name__ == "__main__":
-    compose_file = "example-docker-compose/fake-app/docker-compose.yaml"  
-    app_name = "boaty" 
-    helm_generator = HelmFromComposer(compose_file, app_name, description='Helm chart for boaty!', replicas="3", version="3.1.4", app_version="2.0")
-
-    helm_generator.create_helm_chart()

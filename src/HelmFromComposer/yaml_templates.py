@@ -37,7 +37,6 @@ spec:
               value: {{ $value }}
             {{- end }}
 """
-    print(type(deployment_yaml_content))
     return deployment_yaml_content
 
 def get_service_yaml():

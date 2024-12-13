@@ -1,8 +1,9 @@
 import logging
 import os
+# import pkg_resources
 import yaml
 
-from yaml_templates import get_deployment_yaml, get_service_yaml, get_values_yaml
+from .yaml_templates import get_deployment_yaml, get_service_yaml, get_values_yaml
 
 class HelmFromComposer:
     def __init__(self, compose_file: str, 
@@ -45,6 +46,11 @@ class HelmFromComposer:
 
         # Create chart.yaml 
         self.create_chart_yaml()
+
+        # self.compose_file = pkg_resources.resource_filename('pyhelmgen', self.compose_file)
+
+        # Use the provided compose_file path directly
+        self.compose_file = os.path.abspath(self.compose_file)
 
         # Create sub directory for helm templates if it does not exist yet
         if not os.path.exists(self.templates_dir):
@@ -119,7 +125,14 @@ appVersion: {self.app_version}
 
         service_template = get_service_yaml()
         service_content = service_template.replace("{{ .ServiceName }}", service_name)
-        
+
+        # Replace placeholders for ports
+        if 'ports' in service_data:
+            ports = "\n".join([f"    - port: {port.split(':')[0]}\n      targetPort: {port.split(':')[0]}" for port in service_data['ports']])
+            service_content = service_content.replace("{{- range .Values.{{ .ServiceName }}.ports }}\n    - port: {{ . }}\n      targetPort: {{ . }}\n    {{- end }}", ports)
+        else:
+            service_content = service_content.replace("{{- range .Values.{{ .ServiceName }}.ports }}\n    - port: {{ . }}\n      targetPort: {{ . }}\n    {{- end }}", "")
+
         try:
             with open(os.path.join(self.templates_dir, f"service-{service_name}.yaml"), 'w') as f:
                 f.write(service_content)
@@ -127,6 +140,7 @@ appVersion: {self.app_version}
             print(e.errno)
             print("ERROR: OS error saving service yaml file")
             raise Exception("ERROR: OS error saving service yaml file")
+
 
     def _generate_deployment(self, service_name, service_data):
         '''
@@ -216,3 +230,10 @@ appVersion: {self.app_version}
         except Exception as e:
             print("ERROR: error occured while reading the yaml templates")
             raise Exception("ERROR: error occured while reading the yaml templates")
+
+if __name__ == "__main__":
+    compose_file = "example-docker-compose/fake-app/docker-compose.yaml"  
+    app_name = "boaty" 
+    helm_generator = HelmFromComposer(compose_file, app_name, description='Helm chart for boaty!', replicas="3", version="3.1.4", app_version="2.0")
+
+    helm_generator.create_helm_chart()

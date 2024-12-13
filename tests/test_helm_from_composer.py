@@ -4,14 +4,13 @@ import unittest
 import shutil
 import yaml
 
-# Add the 'src' directory to the Python path
-# sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src/HelmFromComposer')))
-
-from HelmFromComposer import HelmFromComposer
+# Add the 'src' directory to the Python path in order to import HelmFromComposer
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
+from HelmFromComposer.HelmFromComposer import HelmFromComposer
 
 class TestHelmFromComposer():
     def test_create_helm(self):
-        compose_file = "example-docker-compose/fake-app/docker-compose.yaml"  
+        compose_file = os.path.abspath(os.path.join(os.path.dirname(__file__), 'example-docker-compose/node/docker-compose.yaml'))
         app_name = "boaty" 
         helm_generator = HelmFromComposer(compose_file, app_name, description='Helm chart for boaty!', replicas="3", version="3.1.4", app_version="2.0")
         helm_generator.create_helm_chart()

@@ -1,8 +1,6 @@
-import logging
 import os
-# import pkg_resources
 import yaml
-
+import logging
 from .yaml_templates import get_deployment_yaml, get_service_yaml, get_values_yaml
 
 class HelmFromComposer:
@@ -15,16 +13,16 @@ class HelmFromComposer:
                  auto_sync: bool = False):
         self.compose_file = compose_file
         self.app_name = app_name
-        self.desciption = description
+        self.description = description  
         self.replicas = replicas
         self.version = version
         self.app_version = app_version
         self.chart_name = f"{self.app_name}-chart"
         self.chart_dir = f"./{self.chart_name}"
         self.templates_dir = os.path.join(self.chart_dir, "templates")
-        self.values_data = {} # contains data for the resulting values file
+        self.values_data = {}  # contains data for the resulting values file
 
-        # check if the helm chart already exists and if it does not make a directory for it
+        # Check if the helm chart already exists and if it does not make a directory for it
         if not os.path.exists(self.chart_dir) or auto_sync:
             os.makedirs(self.chart_dir)
 
@@ -70,10 +68,7 @@ class HelmFromComposer:
                 self._add_values_for_service(service_name, service_data)
                 self._generate_deployment(service_name, service_data)
                 self.generate_service(service_name, service_data)
-
-        info = f'=== Helm chart created from {self.compose_file}'
-        logging.info(info)
-        print(info)
+        self.create_values_yaml()
 
     def create_chart_yaml(self):
         '''
@@ -82,7 +77,7 @@ class HelmFromComposer:
         '''
         chart_yaml_content = f"""apiVersion: v2
 name: {self.chart_name}
-description: {self.desciption}
+description: {self.description}
 version: {self.version}
 appVersion: {self.app_version}
 """
@@ -94,23 +89,36 @@ appVersion: {self.app_version}
         '''
         Initialize values.yaml with dynamic placeholders 
         '''
+        values_yaml_path = os.path.join(self.chart_dir, 'values.yaml')
+        with open(values_yaml_path, 'w') as f:
+            # Get the initial content from get_values_yaml
+            initial_content = yaml.safe_load(get_values_yaml())
+            
+            # Merge initial content with values_data
+            merged_content = initial_content.copy()
+            for key, value in self.values_data.items():
+                if key in merged_content:
+                    merged_content[key].update(value)
+                else:
+                    merged_content[key] = value
 
-        with open(os.path.join(self.chart_dir, 'values.yaml'), 'w') as f:
             # Add a basic structure to the YAML
-            f.write("imagePullSecrets: []\n")
-            f.write(f"replicaCount: {self.replicas}\n")
-            f.write("serviceAccount:\n")
-            f.write("  create: false\n")
-            f.write("  name: \"\"\n")
+            merged_content.update({
+                "imagePullSecrets": [],
+                "replicaCount": int(self.replicas),  # Ensure replicaCount is an integer
+                "serviceAccount": {
+                    "create": False,
+                    "name": ""
+                }
+            })
             
             try:
-                # Dump the values_data for the services into the values.yaml file
-                yaml.dump(self.values_data, f, default_flow_style=False, allow_unicode=True)
+                # Dump the merged content into the values.yaml file
+                yaml.dump(merged_content, f, default_flow_style=False, allow_unicode=True)
             except Exception as e:
                 print(e.errno)
                 print("ERROR: OS error writing values yaml file.")
                 raise Exception("ERROR: OS error writing values yaml file.")
-
 
     def generate_service(self, service_name, service_data):
         '''
@@ -138,7 +146,6 @@ appVersion: {self.app_version}
             print("ERROR: OS error saving service yaml file")
             raise Exception("ERROR: OS error saving service yaml file")
 
-
     def _generate_deployment(self, service_name, service_data):
         '''
         Generate Kubernetes Deployment yaml with the contents of the docker-compose.yaml, including
@@ -160,10 +167,18 @@ appVersion: {self.app_version}
 
         # Add environment variables
         if 'environment' in service_data:
-            env_vars = "\n".join([
-                f"            - name: {env_key}\n              value: {env_value}"
-                for env_key, env_value in service_data['environment'].items()
-            ])
+            if isinstance(service_data['environment'], dict):
+                env_vars = "\n".join([
+                    f"            - name: {env_key}\n              value: {env_value}"
+                    for env_key, env_value in service_data['environment'].items()
+                ])
+            elif isinstance(service_data['environment'], list):
+                env_vars = "\n".join([
+                    f"            - name: {item.split('=')[0]}\n              value: {item.split('=')[1]}"
+                    for item in service_data['environment']
+                ])
+            else:
+                env_vars = ""
             deployment_content = deployment_content.replace("{{ .Values[.ServiceName].env }}", env_vars)
         else:
             deployment_content = deployment_content.replace("{{ .Values[.ServiceName].env }}", "")
@@ -185,7 +200,7 @@ appVersion: {self.app_version}
 
     def _add_values_for_service(self, service_name, service_data):
         '''
-        Add values from docker-composer.yaml to values.yaml, data includes image, environment variables, and ports
+        Add values from docker-compose.yaml to values.yaml, data includes image, environment variables, and ports
         
         @param: service_name : str : name of the application that the service yaml is defining
         @param: service_data : dict : contents of the yaml template for a helm service file
@@ -202,7 +217,12 @@ appVersion: {self.app_version}
 
         # Add environment variables
         if 'environment' in service_data:
-            service_values['env'] = {key: value for key, value in service_data['environment'].items()}
+            if isinstance(service_data['environment'], dict):
+                service_values['env'] = {key: value for key, value in service_data['environment'].items()}
+            elif isinstance(service_data['environment'], list):
+                service_values['env'] = {item.split('=')[0]: item.split('=')[1] for item in service_data['environment']}
+            else:
+                service_values['env'] = {}
 
         # Add container ports
         if 'ports' in service_data:
@@ -210,20 +230,3 @@ appVersion: {self.app_version}
 
         # Update the values_data dictionary for this service
         self.values_data[service_name] = service_values
-
-    def _read_template(self, template_name):
-        '''
-        Helper function used to read the helm chart yaml templates in the template directory.
-
-        @param: template_name : str : name of the yaml template to read for scaffolding of each helm chart yaml files
-        @returns: the contents of the template file 
-        '''
-        
-        template_path = os.path.join(os.path.dirname(__file__), 'templates', template_name)
-
-        try:
-            with open(template_path, 'r') as template_file:
-                return template_file.read()
-        except Exception as e:
-            print("ERROR: error occured while reading the yaml templates")
-            raise Exception("ERROR: error occured while reading the yaml templates")

@@ -1,7 +1,10 @@
 services:
   web:
     environment:
-      ENV_VAR: value
+      DB_NAME: prod_db
+      DB_USER: prod_user
+      REDIS_HOST: redis
+      NODE_ENV: production
     image: nginx:latest
     ports:
     - 80:80

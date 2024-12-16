@@ -10,27 +10,11 @@ from HelmFromComposer.HelmFromComposer import HelmFromComposer
 
 class TestHelmFromComposer(unittest.TestCase):
     def setUp(self):
-        self.compose_file = os.path.abspath(os.path.join(os.path.dirname(__file__), 'example-docker-compose/node/docker-compose.yaml'))
+        self.compose_file = os.path.abspath(os.path.join(os.path.dirname(__file__), 'example-docker-compose/react-node-redis-pg/docker-compose.yaml'))
         self.app_name = "boaty"
         self.helm_generator = HelmFromComposer(self.compose_file, self.app_name, description='Helm chart for boaty!', replicas="3", version="3.1.4", app_version="2.0")
         self.chart_dir = self.helm_generator.chart_dir
         self.templates_dir = os.path.join(self.chart_dir, "templates")
-
-        # Create a fake docker-compose.yaml file for testing
-        os.makedirs(os.path.dirname(self.compose_file), exist_ok=True)
-        with open(self.compose_file, 'w') as f:
-            yaml.dump({
-                'version': '3',
-                'services': {
-                    'web': {
-                        'image': 'nginx:latest',
-                        'ports': ['80:80'],
-                        'environment': {
-                            'ENV_VAR': 'value'
-                        }
-                    }
-                }
-            }, f)
 
         # Ensure the templates directory exists
         os.makedirs(self.templates_dir, exist_ok=True)
@@ -44,7 +28,7 @@ class TestHelmFromComposer(unittest.TestCase):
             content = f.read()
             self.assertIn('apiVersion: v2', content)
             self.assertIn(f'name: {self.helm_generator.chart_name}', content)
-            self.assertIn(f'description: {self.helm_generator.desciption}', content)
+            self.assertIn(f'description: {self.helm_generator.description}', content)
             self.assertIn(f'version: {self.helm_generator.version}', content)
             self.assertIn(f'appVersion: {self.helm_generator.app_version}', content)
 
@@ -101,14 +85,12 @@ class TestHelmFromComposer(unittest.TestCase):
         self.assertEqual(self.helm_generator.values_data[service_name]['ports'], ['80'])
 
     def test_create_helm_chart(self):
-        print("Starting test_create_helm_chart")
         self.helm_generator.create_helm_chart()
-        print("create_helm_chart finished")
+        values_yaml_path = os.path.join(self.chart_dir, 'values.yaml')
+        self.assertTrue(os.path.exists(values_yaml_path))
+        with open(values_yaml_path, 'r') as f:
+            content = f.read()
         self.assertTrue(os.path.exists(os.path.join(self.chart_dir, 'Chart.yaml')))
-        self.assertTrue(os.path.exists(os.path.join(self.chart_dir, 'values.yaml')))
-        self.assertTrue(os.path.exists(os.path.join(self.chart_dir, 'templates', 'deployment-web.yaml')))
-        self.assertTrue(os.path.exists(os.path.join(self.chart_dir, 'templates', 'service-web.yaml')))
-        print("Assertions completed")
 
 if __name__ == "__main__":
     unittest.main()

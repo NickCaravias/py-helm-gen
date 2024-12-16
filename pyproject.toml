@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pyhelmgen"
-version = "1.2"
+version = "1.3"
 description = "A Python package to generate Helm charts from Docker Compose files."
 authors = ["Nick Caravias <nick.caravias@gmail.com>"]
 license = "MIT"

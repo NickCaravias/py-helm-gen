@@ -13,7 +13,7 @@ class HelmFromComposer:
                  auto_sync: bool = False):
         self.compose_file = compose_file
         self.app_name = app_name
-        self.description = description  # Fix typo here
+        self.description = description  
         self.replicas = replicas
         self.version = version
         self.app_version = app_version
@@ -68,12 +68,7 @@ class HelmFromComposer:
                 self._add_values_for_service(service_name, service_data)
                 self._generate_deployment(service_name, service_data)
                 self.generate_service(service_name, service_data)
-        print("before create values yaml", self.values_data)
         self.create_values_yaml()
-
-        info = f'=== Helm chart created from {self.compose_file}'
-        logging.info(info)
-        print(info)
 
     def create_chart_yaml(self):
         '''
@@ -94,7 +89,6 @@ appVersion: {self.app_version}
         '''
         Initialize values.yaml with dynamic placeholders 
         '''
-        print("Creating values.yaml")
         values_yaml_path = os.path.join(self.chart_dir, 'values.yaml')
         with open(values_yaml_path, 'w') as f:
             # Get the initial content from get_values_yaml
@@ -125,7 +119,6 @@ appVersion: {self.app_version}
                 print(e.errno)
                 print("ERROR: OS error writing values yaml file.")
                 raise Exception("ERROR: OS error writing values yaml file.")
-        print("values.yaml created")
 
     def generate_service(self, service_name, service_data):
         '''
@@ -174,10 +167,18 @@ appVersion: {self.app_version}
 
         # Add environment variables
         if 'environment' in service_data:
-            env_vars = "\n".join([
-                f"            - name: {env_key}\n              value: {env_value}"
-                for env_key, env_value in service_data['environment'].items()
-            ])
+            if isinstance(service_data['environment'], dict):
+                env_vars = "\n".join([
+                    f"            - name: {env_key}\n              value: {env_value}"
+                    for env_key, env_value in service_data['environment'].items()
+                ])
+            elif isinstance(service_data['environment'], list):
+                env_vars = "\n".join([
+                    f"            - name: {item.split('=')[0]}\n              value: {item.split('=')[1]}"
+                    for item in service_data['environment']
+                ])
+            else:
+                env_vars = ""
             deployment_content = deployment_content.replace("{{ .Values[.ServiceName].env }}", env_vars)
         else:
             deployment_content = deployment_content.replace("{{ .Values[.ServiceName].env }}", "")
@@ -206,12 +207,9 @@ appVersion: {self.app_version}
         '''
         service_values = {}
 
-        print("====== SERVICE DATA ======", service_data)
-
         # Add image repository and tag
         if 'image' in service_data:
             image_data = service_data['image'].split(':') if ':' in service_data['image'] else [service_data['image'], 'latest']
-            print("Ema")
             service_values['image'] = {
                 'repository': image_data[0],
                 'tag': image_data[1]
@@ -219,16 +217,16 @@ appVersion: {self.app_version}
 
         # Add environment variables
         if 'environment' in service_data:
-            print("Emanuella")
-            service_values['env'] = {key: value for key, value in service_data['environment'].items()}
-            print(service_values)
+            if isinstance(service_data['environment'], dict):
+                service_values['env'] = {key: value for key, value in service_data['environment'].items()}
+            elif isinstance(service_data['environment'], list):
+                service_values['env'] = {item.split('=')[0]: item.split('=')[1] for item in service_data['environment']}
+            else:
+                service_values['env'] = {}
 
         # Add container ports
         if 'ports' in service_data:
-            print("Emanuellaaaaaaa")
             service_values['ports'] = [port.split(':')[0] for port in service_data['ports']]
 
-        print("====== SERVICE VARIABLES ======", service_values, "\n\n\n\n")
         # Update the values_data dictionary for this service
         self.values_data[service_name] = service_values
-        # print("_add_values_for_service", self.values_data)

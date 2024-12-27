@@ -69,5 +69,12 @@ def get_values_yaml():
     tag: latest
   env: {}
   ports: []
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
 """
     return values_yaml_content

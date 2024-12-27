@@ -6,6 +6,7 @@ from .yaml_templates import get_deployment_yaml, get_service_yaml, get_values_ya
 class HelmFromComposer:
     def __init__(self, compose_file: str, 
                  app_name: str, 
+                 namespaces: list,
                  description: str = "A Helm chart for deploying the {{ .Release.Name }} web app", 
                  replicas: str = "1",
                  version: str = "0.1.0",
@@ -21,6 +22,7 @@ class HelmFromComposer:
         self.chart_dir = f"./{self.chart_name}"
         self.templates_dir = os.path.join(self.chart_dir, "templates")
         self.values_data = {}  # contains data for the resulting values file
+        self.namespaces = namespaces
 
         # Check if the helm chart already exists and if it does not make a directory for it
         if not os.path.exists(self.chart_dir) or auto_sync:
@@ -89,36 +91,39 @@ appVersion: {self.app_version}
         '''
         Initialize values.yaml with dynamic placeholders 
         '''
-        values_yaml_path = os.path.join(self.chart_dir, 'values.yaml')
-        with open(values_yaml_path, 'w') as f:
-            # Get the initial content from get_values_yaml
-            initial_content = yaml.safe_load(get_values_yaml())
-            
-            # Merge initial content with values_data
-            merged_content = initial_content.copy()
-            for key, value in self.values_data.items():
-                if key in merged_content:
-                    merged_content[key].update(value)
-                else:
-                    merged_content[key] = value
+        # iterate over every namespace and create a values file for it
+        for namespace in self.namespaces:
+            values_yaml_path = os.path.join(self.chart_dir, f"values-{namespace}.yaml")
+            with open(values_yaml_path, 'w') as f:
+                # Get the initial content from get_values_yaml
+                initial_content = yaml.safe_load(get_values_yaml())
+                
+                # Merge initial content with values_data
+                merged_content = initial_content.copy()
+                for key, value in self.values_data.items():
+                    if key in merged_content:
+                        merged_content[key].update(value)
+                    else:
+                        merged_content[key] = value
 
-            # Add a basic structure to the YAML
-            merged_content.update({
-                "imagePullSecrets": [],
-                "replicaCount": int(self.replicas),  # Ensure replicaCount is an integer
-                "serviceAccount": {
-                    "create": False,
-                    "name": ""
-                }
-            })
-            
-            try:
-                # Dump the merged content into the values.yaml file
-                yaml.dump(merged_content, f, default_flow_style=False, allow_unicode=True)
-            except Exception as e:
-                print(e.errno)
-                print("ERROR: OS error writing values yaml file.")
-                raise Exception("ERROR: OS error writing values yaml file.")
+                # Add a basic structure to the YAML
+                merged_content.update({
+                    "imagePullSecrets": [],
+                    "nameSpace": namespace,
+                    "replicaCount": int(self.replicas),  # Ensure replicaCount is an integer
+                    "serviceAccount": {
+                        "create": False,
+                        "name": ""
+                    }
+                })
+                
+                try:
+                    # Dump the merged content into the values.yaml file
+                    yaml.dump(merged_content, f, default_flow_style=False, allow_unicode=True)
+                except Exception as e:
+                    print(e.errno)
+                    print("ERROR: OS error writing values yaml file.")
+                    raise Exception("ERROR: OS error writing values yaml file.")
 
     def generate_service(self, service_name, service_data):
         '''

@@ -59,7 +59,7 @@ spec:
 """
     return service_yaml_content
 
-def get_values_yaml():
+def get_values_yaml(limits):
     """
     Function to generate the values yaml template with placeholders.
     """
@@ -78,3 +78,17 @@ resources:
     memory: 256Mi
 """
     return values_yaml_content
+
+def _validate_limits(limits):
+  """
+  Function to validate limits, ensure that cpu memory and limit end with m and memory ends with 
+  Mi or G
+
+  Args:
+    limits (dict): dictionary containing the limits for cpu and memory
+  """
+  if limits.get('cpu')[-1] != 'm':
+    raise ValueError('CPU limit should end with m')
+  if limits.get('memory')[-2:] not in ['Mi', 'Gi']:
+    raise ValueError('Memory limit should end with Mi or Gi')
+  

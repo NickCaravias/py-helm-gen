@@ -98,7 +98,7 @@ appVersion: {self.app_version}
             values_yaml_path = os.path.join(self.chart_dir, f"values-{namespace}.yaml")
             with open(values_yaml_path, 'w') as f:
                 # Get the initial content from get_values_yaml
-                initial_content = yaml.safe_load(get_values_yaml())
+                initial_content = yaml.safe_load(get_values_yaml(self.limits))
                 
                 # Merge initial content with values_data
                 merged_content = initial_content.copy()

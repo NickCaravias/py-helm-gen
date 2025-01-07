@@ -67,9 +67,13 @@ def _validate_limits(limits):
   Args:
     limits (dict): dictionary containing the limits for cpu and memory
   """
-  if limits.get('cpu')[-1] != 'm':
+  if limits['cpu_limit'][-1] != 'm':
     return False
-  if limits.get('memory')[-2:] not in ['Mi', 'Gi']:
+  if limits['memory_limit'][-2:] not in ['Mi', 'Gi']:
+    return False
+  if limits['cpu_request'][-1] != 'm':
+    return False
+  if limits['memory_request'][-2:] not in ['Mi', 'Gi']:
     return False
   return True
   

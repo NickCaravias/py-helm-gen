@@ -11,6 +11,7 @@ class HelmFromComposer:
                  replicas: str = "1",
                  version: str = "0.1.0",
                  app_version: str = "1.0",
+                 limits: dict = {'cpu_limit': '500m', 'memory_limit': '512Mi', 'cpu_request': '250m', 'memory_request': '256Mi'},
                  auto_sync: bool = False):
         self.compose_file = compose_file
         self.app_name = app_name
@@ -23,6 +24,7 @@ class HelmFromComposer:
         self.templates_dir = os.path.join(self.chart_dir, "templates")
         self.values_data = {}  # contains data for the resulting values file
         self.namespaces = namespaces
+        self.limits = limits
 
         # Check if the helm chart already exists and if it does not make a directory for it
         if not os.path.exists(self.chart_dir) or auto_sync:

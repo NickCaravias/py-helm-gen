@@ -12,7 +12,22 @@ class TestHelmFromComposer(unittest.TestCase):
     def setUp(self):
         self.compose_file = os.path.abspath(os.path.join(os.path.dirname(__file__), 'example-docker-compose/react-node-redis-pg/docker-compose.yaml'))
         self.app_name = "boaty"
-        self.helm_generator = HelmFromComposer(self.compose_file, self.app_name, namespaces=['dev', 'qa', 'uat'], description='Helm chart for boaty!', replicas="3", version="3.1.4", app_version="2.0")
+        self.limits = {
+            'cpu_limit': '500m',
+            'memory_limit': '512Mi',
+            'cpu_request': '250m',
+            'memory_request': '256Mi'
+        }
+        self.helm_generator = HelmFromComposer(
+            self.compose_file, 
+            self.app_name, 
+            namespaces=['dev', 'qa', 'uat'],
+            description='Helm chart for boaty!',
+            replicas="3",
+            version="3.1.4",
+            app_version="2.0",
+            limits=self.limits
+        )
         self.chart_dir = self.helm_generator.chart_dir
         self.templates_dir = os.path.join(self.chart_dir, "templates")
 

@@ -59,22 +59,57 @@ spec:
 """
     return service_yaml_content
 
-def get_values_yaml():
+def _validate_limits(limits):
+  """
+  Function to validate limits, ensure that cpu memory and limit end with m and memory ends with 
+  Mi or G
+
+  Args:
+    limits (dict): dictionary containing the limits for cpu and memory
+  """
+  if limits['cpu_limit'][-1] != 'm':
+    return False
+  if limits['memory_limit'][-2:] not in ['Mi', 'Gi']:
+    return False
+  if limits['cpu_request'][-1] != 'm':
+    return False
+  if limits['memory_request'][-2:] not in ['Mi', 'Gi']:
+    return False
+  return True
+  
+def get_values_yaml(limits):
     """
     Function to generate the values yaml template with placeholders.
     """
-    values_yaml_content = """webapp:
-  image:
-    repository: webapp
-    tag: latest
-  env: {}
-  ports: []
-resources:
-  limits:
-    cpu: 500m
-    memory: 512Mi
-  requests:
-    cpu: 250m
-    memory: 256Mi
+    if not _validate_limits(limits):
+      values_yaml_content = """webapp:
+    image:
+      repository: webapp
+      tag: latest
+    env: {}
+    ports: []
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 250m
+        memory: 256Mi
 """
+    else: 
+       values_yaml_content = f"""webapp:
+    image:
+      repository: webapp
+      tag: latest
+    env: {{}}
+    ports: []
+    resources:
+      limits:
+        cpu: {limits['cpu_limit']}
+        memory: {limits['memory_limit']}
+      requests:
+        cpu: {limits['cpu_request']}
+        memory: {limits['memory_request']}
+"""
+       
     return values_yaml_content

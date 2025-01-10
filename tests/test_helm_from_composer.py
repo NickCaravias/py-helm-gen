@@ -102,6 +102,32 @@ class TestHelmFromComposer(unittest.TestCase):
         self.assertEqual(self.helm_generator.values_data[service_name]['env']['ENV_VAR'], 'value')
         self.assertEqual(self.helm_generator.values_data[service_name]['ports'], ['80'])
 
+    def test_create_values_yaml_for_namespaces(self):
+        """Test that values files are created for each namespace with correct content"""
+        self.helm_generator.create_values_yaml()
+        
+        # Check that values files exist for each namespace
+        for namespace in ['dev', 'qa', 'uat']:
+            values_yaml_path = os.path.join(self.chart_dir, f'values-{namespace}.yaml')
+            self.assertTrue(os.path.exists(values_yaml_path))
+            
+            # Verify content of each values file
+            with open(values_yaml_path, 'r') as f:
+                content = yaml.safe_load(f)
+                
+                # Check basic structure
+                self.assertIn('webapp', content)
+                self.assertIn('resources', content['webapp'])
+                
+                # Check resource limits
+                self.assertEqual(content['webapp']['resources']['limits']['cpu'], self.limits['cpu_limit'])
+                self.assertEqual(content['webapp']['resources']['limits']['memory'], self.limits['memory_limit'])
+                self.assertEqual(content['webapp']['resources']['requests']['cpu'], self.limits['cpu_request'])
+                self.assertEqual(content['webapp']['resources']['requests']['memory'], self.limits['memory_request'])
+                
+                # Check namespace
+                self.assertEqual(content.get('nameSpace'), namespace)
+        
     def test_create_helm_chart(self):
         self.helm_generator.create_helm_chart()
         self.assertTrue(os.path.exists(os.path.join(self.chart_dir, 'Chart.yaml')))

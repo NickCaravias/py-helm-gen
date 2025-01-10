@@ -127,6 +127,32 @@ class TestHelmFromComposer(unittest.TestCase):
                 
                 # Check namespace
                 self.assertEqual(content.get('nameSpace'), namespace)
+
+    def test_image_parsing(self):
+        """Test image repository and tag parsing"""
+        test_cases = [
+            ('nginx:latest', ('nginx', 'latest')),
+            ('custom/app:v1.2.3', ('custom/app', 'v1.2.3')),
+            ('registry.example.com/app', ('registry.example.com/app', 'latest'))
+        ]
+        for image, expected in test_cases:
+            service_data = {'image': image}
+            service_values = {}
+            self.helm_generator._add_values_for_service('test', service_data)
+            self.assertEqual(
+                self.helm_generator.values_data['test']['image']['repository'],
+                expected[0]
+            )
+            self.assertEqual(
+                self.helm_generator.values_data['test']['image']['tag'],
+                expected[1]
+            )
+
+    def test_skip_db_services(self):
+        """Test that DB services are skipped in helm chart generation"""
+        self.helm_generator.create_helm_chart()
+        db_service_path = os.path.join(self.templates_dir, 'deployment-db.yaml')
+        self.assertFalse(os.path.exists(db_service_path))
         
     def test_create_helm_chart(self):
         self.helm_generator.create_helm_chart()

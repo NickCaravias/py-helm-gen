@@ -148,6 +148,41 @@ class TestHelmFromComposer(unittest.TestCase):
                 expected[1]
             )
 
+    def test_environment_variable_formats(self):
+        """Test handling of environment variables in different formats"""
+        # Test dict format
+        env_dict = {'KEY1': 'value1', 'KEY2': 'value2'}
+        service_data = {'environment': env_dict}
+        self.helm_generator._add_values_for_service('test-dict', service_data)
+        self.assertEqual(
+            self.helm_generator.values_data['test-dict']['env'],
+            env_dict
+        )
+
+        # Test list format
+        env_list = ['KEY1=value1', 'KEY2=value2']
+        service_data = {'environment': env_list}
+        self.helm_generator._add_values_for_service('test-list', service_data)
+        self.assertEqual(
+            self.helm_generator.values_data['test-list']['env'],
+            {'KEY1': 'value1', 'KEY2': 'value2'}
+        )
+
+    def test_port_mapping(self):
+        """Test service port mapping"""
+        test_cases = [
+            (['80:80'], ['80']),
+            (['3000:3000', '9090:9090'], ['3000', '9090']),
+            (['127.0.0.1:8080:80'], ['8080'])
+        ]
+        for ports, expected in test_cases:
+            service_data = {'ports': ports}
+            self.helm_generator._add_values_for_service('test', service_data)
+            self.assertEqual(
+                self.helm_generator.values_data['test']['ports'],
+                expected
+            )
+
     def test_skip_db_services(self):
         """Test that DB services are skipped in helm chart generation"""
         self.helm_generator.create_helm_chart()

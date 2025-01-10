@@ -102,6 +102,93 @@ class TestHelmFromComposer(unittest.TestCase):
         self.assertEqual(self.helm_generator.values_data[service_name]['env']['ENV_VAR'], 'value')
         self.assertEqual(self.helm_generator.values_data[service_name]['ports'], ['80'])
 
+    def test_create_values_yaml_for_namespaces(self):
+        """Test that values files are created for each namespace with correct content"""
+        self.helm_generator.create_values_yaml()
+        
+        # Check that values files exist for each namespace
+        for namespace in ['dev', 'qa', 'uat']:
+            values_yaml_path = os.path.join(self.chart_dir, f'values-{namespace}.yaml')
+            self.assertTrue(os.path.exists(values_yaml_path))
+            
+            # Verify content of each values file
+            with open(values_yaml_path, 'r') as f:
+                content = yaml.safe_load(f)
+                
+                # Check basic structure
+                self.assertIn('webapp', content)
+                self.assertIn('resources', content['webapp'])
+                
+                # Check resource limits
+                self.assertEqual(content['webapp']['resources']['limits']['cpu'], self.limits['cpu_limit'])
+                self.assertEqual(content['webapp']['resources']['limits']['memory'], self.limits['memory_limit'])
+                self.assertEqual(content['webapp']['resources']['requests']['cpu'], self.limits['cpu_request'])
+                self.assertEqual(content['webapp']['resources']['requests']['memory'], self.limits['memory_request'])
+                
+                # Check namespace
+                self.assertEqual(content.get('nameSpace'), namespace)
+
+    def test_image_parsing(self):
+        """Test image repository and tag parsing"""
+        test_cases = [
+            ('nginx:latest', ('nginx', 'latest')),
+            ('custom/app:v1.2.3', ('custom/app', 'v1.2.3')),
+            ('registry.example.com/app', ('registry.example.com/app', 'latest'))
+        ]
+        for image, expected in test_cases:
+            service_data = {'image': image}
+            service_values = {}
+            self.helm_generator._add_values_for_service('test', service_data)
+            self.assertEqual(
+                self.helm_generator.values_data['test']['image']['repository'],
+                expected[0]
+            )
+            self.assertEqual(
+                self.helm_generator.values_data['test']['image']['tag'],
+                expected[1]
+            )
+
+    def test_environment_variable_formats(self):
+        """Test handling of environment variables in different formats"""
+        # Test dict format
+        env_dict = {'KEY1': 'value1', 'KEY2': 'value2'}
+        service_data = {'environment': env_dict}
+        self.helm_generator._add_values_for_service('test-dict', service_data)
+        self.assertEqual(
+            self.helm_generator.values_data['test-dict']['env'],
+            env_dict
+        )
+
+        # Test list format
+        env_list = ['KEY1=value1', 'KEY2=value2']
+        service_data = {'environment': env_list}
+        self.helm_generator._add_values_for_service('test-list', service_data)
+        self.assertEqual(
+            self.helm_generator.values_data['test-list']['env'],
+            {'KEY1': 'value1', 'KEY2': 'value2'}
+        )
+
+    def test_port_mapping(self):
+        """Test service port mapping"""
+        test_cases = [
+            (['80:80'], ['80']),
+            (['3000:3000', '9090:9090'], ['3000', '9090']),
+            (['127.0.0.1:8080:80'], ['8080'])
+        ]
+        for ports, expected in test_cases:
+            service_data = {'ports': ports}
+            self.helm_generator._add_values_for_service('test', service_data)
+            self.assertEqual(
+                self.helm_generator.values_data['test']['ports'],
+                expected
+            )
+
+    def test_skip_db_services(self):
+        """Test that DB services are skipped in helm chart generation"""
+        self.helm_generator.create_helm_chart()
+        db_service_path = os.path.join(self.templates_dir, 'deployment-db.yaml')
+        self.assertFalse(os.path.exists(db_service_path))
+        
     def test_create_helm_chart(self):
         self.helm_generator.create_helm_chart()
         self.assertTrue(os.path.exists(os.path.join(self.chart_dir, 'Chart.yaml')))

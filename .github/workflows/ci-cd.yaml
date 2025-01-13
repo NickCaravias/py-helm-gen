@@ -1,10 +1,10 @@
-name: Build and Deploy Python Package
+name: 
 
-# on:
-#   push:
-#     branches:
-#       - main
-#   workflow_dispatch:  # This will allow manual triggering as well
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: 
 
 jobs:
   build:
@@ -22,15 +22,15 @@ jobs:
     - name: Install Poetry
       run: |
         curl -sSL https://install.python-poetry.org | python3 -
-        echo "$HOME/.local/bin" >> $GITHUB_PATH  # Add poetry to PATH
+        echo "$HOME/.local/bin" >> $GITHUB_PATH 
 
     - name: Install dependencies
       run: |
-        poetry install  # Install dependencies from pyproject.toml
+        poetry install  
 
     - name: Build package
       run: |
-        poetry build  # Build the source distribution and wheel
+        poetry build 
 
     - name: Upload to Test PyPI
       run: |

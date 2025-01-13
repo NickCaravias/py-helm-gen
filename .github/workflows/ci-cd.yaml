@@ -1,40 +1,37 @@
-name: 
+name: Build and deploy to PyPI
 
 on:
   push:
     branches:
       - main
-  workflow_dispatch: 
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-
+    - uses: actions/checkout@v2
+    
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v2
       with:
-        python-version: '3.8'  
+        python-version: '3.x'
 
-    - name: Install Poetry
+    - name: Install build dependencies
       run: |
-        curl -sSL https://install.python-poetry.org | python3 -
-        echo "$HOME/.local/bin" >> $GITHUB_PATH 
-
-    - name: Install dependencies
-      run: |
-        poetry install  
+        python -m pip install --upgrade pip
+        pip install build twine
 
     - name: Build package
-      run: |
-        poetry build 
+      run: python -m build
 
+  deploy-test:
+    needs: build
+    environment: test
+    runs-on: ubuntu-latest
+    steps:
     - name: Upload to Test PyPI
       run: |
-        twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+        twine upload --repository testpypi dist/*
       env:
         TWINE_USERNAME: ${{ secrets.TEST_PYPI_USERNAME }}
         TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}
@@ -42,22 +39,20 @@ jobs:
     - name: Test installation from Test PyPI
       run: |
         pip install --index-url https://test.pypi.org/simple/ pyhelmgen
-      continue-on-error: true  # Continue even if the test fails
+      continue-on-error: true
 
     - name: Confirm Test PyPI installation works
       run: |
-        python -c "import HelmFromComposer; print(HelmFromComposer.__version__)"  # Check if the package is working after installation
+        python -c "import HelmFromComposer; print(HelmFromComposer.__version__)"
 
-    # Add the manual approval step here:
-    - name: Manual approval before PyPI upload
-      run: |
-        echo "Please verify the package on Test PyPI before proceeding to upload to production."
-        read -p "Press enter to confirm the package works on Test PyPI, and proceed to upload to PyPI."
-
+  deploy-prod:
+    needs: deploy-test
+    environment: production
+    runs-on: ubuntu-latest
+    steps:
     - name: Upload to PyPI
       run: |
         twine upload dist/*
       env:
         TWINE_USERNAME: ${{ secrets.PROD_PYPI_USERNAME }}
         TWINE_PASSWORD: ${{ secrets.PROD_PYPI_API_TOKEN }}
-      if: success()  # Only upload to PyPI if the Test PyPI installation was successful

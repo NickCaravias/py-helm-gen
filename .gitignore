@@ -3,6 +3,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Chart output in test case
+boaty-chart/
+
 # C extensions
 *.so
 

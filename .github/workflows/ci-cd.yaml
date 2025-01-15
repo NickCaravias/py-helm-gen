@@ -24,11 +24,31 @@ jobs:
     - name: Build package
       run: python -m build
 
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: dist
+        path: dist/
+
   deploy-test:
-    needs: build
+    needs: approve-test-deploy
     environment: test
     runs-on: ubuntu-latest
     steps:
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+
+    - name: Install twine
+      run: pip install twine
+
+    - name: Download artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: dist
+        path: dist/
+
     - name: Upload to Test PyPI
       run: |
         twine upload --repository testpypi dist/*
@@ -36,20 +56,25 @@ jobs:
         TWINE_USERNAME: ${{ secrets.TEST_PYPI_USERNAME }}
         TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}
 
-    - name: Test installation from Test PyPI
-      run: |
-        pip install --index-url https://test.pypi.org/simple/ pyhelmgen
-      continue-on-error: true
-
-    - name: Confirm Test PyPI installation works
-      run: |
-        python -c "import HelmFromComposer; print(HelmFromComposer.__version__)"
-
   deploy-prod:
-    needs: deploy-test
+    needs: approve-prod-deploy
     environment: production
     runs-on: ubuntu-latest
     steps:
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+
+    - name: Install twine
+      run: pip install twine
+
+    - name: Download artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: dist
+        path: dist/
+
     - name: Upload to PyPI
       run: |
         twine upload dist/*

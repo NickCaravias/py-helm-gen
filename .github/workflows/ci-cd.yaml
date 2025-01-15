@@ -30,6 +30,18 @@ jobs:
         name: dist
         path: dist/
 
+  approve-test-deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: trstringer/manual-approval@v1
+      with:
+        secret: ${{ github.TOKEN }}
+        approvers: nickcaravias
+        minimum-approvals: 1
+        issue-title: "Deploying to Test PyPI"
+        issue-body: "Please approve or deny the deployment to Test PyPI"
+
   deploy-test:
     needs: approve-test-deploy
     environment: test
@@ -55,6 +67,18 @@ jobs:
       env:
         TWINE_USERNAME: ${{ secrets.TEST_PYPI_USERNAME }}
         TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}
+
+  approve-prod-deploy:
+    needs: deploy-test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: trstringer/manual-approval@v1
+      with:
+        secret: ${{ github.TOKEN }}
+        approvers: nickcaravias
+        minimum-approvals: 1
+        issue-title: "Deploying to Production PyPI"
+        issue-body: "Please approve or deny the deployment to Production PyPI"
 
   deploy-prod:
     needs: approve-prod-deploy

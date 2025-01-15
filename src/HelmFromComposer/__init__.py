@@ -1,5 +1,5 @@
 # package meta data
-__version__ = '1.3' 
+__version__ = '1.4' 
 __author__ = 'Nick Caravias'
 __email__ = 'nick.caravias@gmail.com'
 

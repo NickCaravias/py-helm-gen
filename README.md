@@ -37,3 +37,8 @@ Options for the helm chart can be added at the initialization of the HelmFromCom
 
 ## Contact  
 If you want to make any contributions to the library please open a pull request on the GitHub repo. If you have any questions please email nick.caravias@gmail.com  
+
+### Pull request formatting  
+Please format with / either as a bugfix or feature, then your github user name, then the issue id with a description.  
+
+For example feature/NickCaravias/issue-10-service-class 
